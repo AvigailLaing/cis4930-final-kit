@@ -37,6 +37,9 @@ case "$cmd" in
   breakglass|recovery)
     exec bash "$DIR/blue/breakglass.sh" "$@"
     ;;
+  evict|kick)
+    exec bash "$DIR/blue/evict.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows side runs on the DC, in an admin session:
@@ -67,6 +70,7 @@ blue.sh — blue kit entry point
   bash blue.sh rotate              classify every account, service accounts included
   bash blue.sh rotate --apply --include-service   rotate, including services
   bash blue.sh breakglass create   your own documented way back in
+  bash blue.sh evict --from <RED_IP> [--apply]   the response action: find them, throw them out, verify
   bash blue.sh win                 the Windows reminders
 
 Order in the round: baseline (prep) -> patch (prep) -> triage every 2 minutes

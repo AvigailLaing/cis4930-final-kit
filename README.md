@@ -16,6 +16,7 @@ red/
   plant_windows.ps1         four persistence mechanisms on Windows
   loot_ad.sh                AD enumeration, writes ./loot/
   ad_chain.sh               password reset -> WriteDacl -> DCSync -> pass-the-hash
+  linux_privesc.sh          rank local Linux escalation paths (sudo, SUID, caps, cron, units)
 blue/
   baseline.sh               capture Linux state before the round
   baseline.ps1              capture Windows state before the round
@@ -27,6 +28,7 @@ blue/
   rotate_linux.sh           password rotation that classifies humans, daemons, services, rogues
   rotate_windows.ps1        same for Windows, and it knows local (SAM) from domain (AD)
   breakglass.sh/.ps1        our own documented recovery account, created in prep, removed at debrief
+  evict.sh                  the response action: find a session by source IP, kill it, remove persistence, verify
   wazuh_local_rules.xml     17 custom detection rules
 docs/                       runbooks, live cards, cheat sheet (PDF)
 ```
@@ -54,6 +56,8 @@ The two dispatchers find their own directories, so they work from anywhere.
 | Red: what we did to wipe a machine | documented in `docs/RED_LIVE_CARD.pdf`, wipe statement section |
 | Blue: 5+ incidents | `blue/triage_linux.sh` findings, Autoruns, and Wazuh, logged in the four-field evidence format |
 | Blue: how we dealt with password changes | `blue/rotate_linux.sh`, `blue/rotate_windows.ps1` (service accounts included, local vs domain handled), plus `docs/BLUE_LIVE_CARD.pdf` for what survived the rotation |
+| Red: 2 Linux privesc methods | `red/linux_privesc.sh` ranks the candidates and prints the escalation command for each |
+| Blue: 1 response action | `blue/evict.sh --from <red-ip> --apply` finds the session, kills it, removes persistence, verifies |
 | Blue: recovery access | `blue/breakglass.sh`, `blue/breakglass.ps1`. Disclosed in the report and removed at the debrief |
 | Blue: custom scripts to defend / automate patching | `blue/baseline*.{sh,ps1}`, `blue/triage_linux.sh`, `blue/sweep_linux.sh`, `blue/patch_linux.sh`, `blue/patch_windows.ps1`, `blue/wazuh_local_rules.xml` |
 

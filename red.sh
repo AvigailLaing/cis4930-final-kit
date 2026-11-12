@@ -24,6 +24,9 @@ case "$cmd" in
   chain|ad)
     exec bash "$DIR/red/ad_chain.sh" "$@"
     ;;
+  privesc|suid)
+    exec bash "$DIR/red/linux_privesc.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows persistence runs inside your evil-winrm session, not on Kali:
@@ -50,6 +53,10 @@ red.sh — red kit entry point
   bash red.sh chain  <DC_IP> <domain> <user> <pass> <victim>
         reset a password, grant replication rights, dump the Administrator
         hash, then prints the pass-the-hash command
+
+  bash red.sh privesc
+        rank local Linux escalation paths: sudo, SUID, capabilities, cron,
+        writable units, docker group, kernel CVE range
 
   bash red.sh win
         the reminder for the Windows script (runs inside evil-winrm)
