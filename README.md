@@ -23,7 +23,10 @@ blue/
   sweep_linux.sh            find and remove common persistence (dry run by default)
   patch_linux.sh            apply the fixes: auditd, sshd, SUID find, empty passwords
   patch_windows.ps1         enable the audit policy that was missing, SMB signing, Sysmon
-  lockdown.ps1              endgame: password change, rogue admins, rogue tasks, WMI
+  lockdown.ps1              endgame: rogue admins, rogue tasks, Run keys, WMI subscriptions
+  rotate_linux.sh           password rotation that classifies humans, daemons, services, rogues
+  rotate_windows.ps1        same for Windows, and it knows local (SAM) from domain (AD)
+  breakglass.sh/.ps1        our own documented recovery account, created in prep, removed at debrief
   wazuh_local_rules.xml     17 custom detection rules
 docs/                       runbooks, live cards, cheat sheet (PDF)
 ```
@@ -50,7 +53,8 @@ The two dispatchers find their own directories, so they work from anywhere.
 | Red: 2+ attempts to take down a service | documented in `docs/RED_LIVE_CARD.pdf`, endgame section, with the four screenshots per attempt |
 | Red: what we did to wipe a machine | documented in `docs/RED_LIVE_CARD.pdf`, wipe statement section |
 | Blue: 5+ incidents | `blue/triage_linux.sh` findings, Autoruns, and Wazuh, logged in the four-field evidence format |
-| Blue: how we dealt with password changes | `docs/BLUE_LIVE_CARD.pdf`, password rotation section, including what survived the rotation |
+| Blue: how we dealt with password changes | `blue/rotate_linux.sh`, `blue/rotate_windows.ps1` (service accounts included, local vs domain handled), plus `docs/BLUE_LIVE_CARD.pdf` for what survived the rotation |
+| Blue: recovery access | `blue/breakglass.sh`, `blue/breakglass.ps1`. Disclosed in the report and removed at the debrief |
 | Blue: custom scripts to defend / automate patching | `blue/baseline*.{sh,ps1}`, `blue/triage_linux.sh`, `blue/sweep_linux.sh`, `blue/patch_linux.sh`, `blue/patch_windows.ps1`, `blue/wazuh_local_rules.xml` |
 
 ## Technique to detection map

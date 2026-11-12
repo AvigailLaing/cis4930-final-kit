@@ -31,6 +31,12 @@ case "$cmd" in
   patch|harden)
     exec bash "$DIR/blue/patch_linux.sh" "$@"
     ;;
+  rotate|passwords)
+    exec bash "$DIR/blue/rotate_linux.sh" "$@"
+    ;;
+  breakglass|recovery)
+    exec bash "$DIR/blue/breakglass.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows side runs on the DC, in an admin session:
@@ -58,6 +64,9 @@ blue.sh — blue kit entry point
   bash blue.sh patch               applies fixes: auditd + ruleset, sshd hardening,
                                    SUID off find, lock empty-password accounts
   bash blue.sh patch --dry-run     shows what patching would change
+  bash blue.sh rotate              classify every account, service accounts included
+  bash blue.sh rotate --apply --include-service   rotate, including services
+  bash blue.sh breakglass create   your own documented way back in
   bash blue.sh win                 the Windows reminders
 
 Order in the round: baseline (prep) -> patch (prep) -> triage every 2 minutes
