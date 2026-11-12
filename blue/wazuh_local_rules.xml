@@ -1,0 +1,163 @@
+<!--
+  final_custom_rules.xml — drop-in Wazuh rules for every red technique from the labs.
+
+  Install on the Wazuh manager (the Logstation):
+    sudo cp final_custom_rules.xml /var/ossec/etc/rules/final_custom_rules.xml
+    sudo /var/ossec/bin/wazuh-analysisd -t          # config test, must be silent
+    sudo /var/ossec/bin/wazuh-control restart
+
+  Verify a rule will fire BEFORE the round, using a real event from the dashboard:
+    sudo /var/ossec/bin/wazuh-logtest
+    paste one line of JSON from an existing 4624/4698 alert, read which rules matched
+
+  If a rule never fires: the parent id is wrong. That is what bit us in the phase 4 lab.
+  Run wazuh-logtest on a real event, read the rule id that DID match, and change
+  <if_sid> to that id. 60000 is the generic Windows parent, 80700 the auditd parent.
+-->
+
+<group name="final_custom,windows,">
+
+  <!-- new local user: the classic "svc_backup3" move -->
+  <rule id="100100" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4720$</field>
+    <description>Windows: local user account created ($(win.eventdata.targetUserName))</description>
+  </rule>
+
+  <!-- added to a local group, usually Administrators -->
+  <rule id="100101" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4732$</field>
+    <description>Windows: account added to a local group (possible local admin)</description>
+  </rule>
+
+  <!-- scheduled task created: the most common Windows persistence -->
+  <rule id="100102" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4698$</field>
+    <description>Windows: scheduled task created ($(win.eventdata.taskName))</description>
+  </rule>
+
+  <!-- new service installed -->
+  <rule id="100103" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^7045$</field>
+    <description>Windows: new service installed ($(win.eventdata.serviceName))</description>
+  </rule>
+
+  <!-- Sysmon 13: registry value set inside a Run key -->
+  <rule id="100104" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^13$</field>
+    <field name="win.eventdata.targetObject" type="pcre2">\\CurrentVersion\\Run</field>
+    <description>Sysmon: Run key value set (logon persistence)</description>
+  </rule>
+
+  <!-- Sysmon 19/20/21: WMI event subscription activity, the one people miss -->
+  <rule id="100105" level="12">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^19$|^20$|^21$</field>
+    <description>Sysmon: WMI event subscription created (possible persistence)</description>
+  </rule>
+
+  <!-- 4662 with replication GUIDs: DCSync -->
+  <rule id="100106" level="13">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4662$</field>
+    <field name="win.eventdata.properties" type="pcre2">1131f6aa-9c07-11d1-f79f-00c04fc2dcd2|1131f6ad-9c07-11d1-f79f-00c04fc2dcd2</field>
+    <description>Possible DCSync: directory replication rights used on the domain NC</description>
+  </rule>
+
+  <!-- 4769 with RC4: kerberoasting -->
+  <rule id="100107" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4769$</field>
+    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+    <description>Kerberos: service ticket requested with RC4 encryption (possible kerberoasting)</description>
+  </rule>
+
+  <!-- 4724: password reset by someone who is not help desk -->
+  <rule id="100108" level="10">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4724$</field>
+    <description>Windows: password reset attempt on another account ($(win.eventdata.subjectUserName) -> $(win.eventdata.targetUserName))</description>
+  </rule>
+
+  <!-- 4624 type 3 over NTLM from a non-domain host: pass-the-hash fingerprint -->
+  <rule id="100109" level="12">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^4624$</field>
+    <field name="win.eventdata.logonType">^3$</field>
+    <field name="win.eventdata.authenticationPackageName">^NTLM$</field>
+    <description>Windows: NTLM network logon to a domain controller (possible pass-the-hash)</description>
+  </rule>
+
+  <!-- 1102: audit log cleared, always worth a high level -->
+  <rule id="100110" level="13">
+    <if_sid>60000</if_sid>
+    <field name="win.system.eventID">^1102$</field>
+    <description>Windows: audit log was cleared</description>
+  </rule>
+
+</group>
+
+<group name="final_custom,auditd,linux,">
+
+  <!-- auditd keys, only fire if you added the watches during prep -->
+  <rule id="100120" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^cron$</field>
+    <description>auditd: crontab changed on a monitored host</description>
+  </rule>
+
+  <rule id="100121" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^systemd$</field>
+    <description>auditd: systemd unit added or changed</description>
+  </rule>
+
+  <rule id="100122" level="11">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^user_ssh$</field>
+    <description>auditd: SSH authorized_keys changed (key based persistence)</description>
+  </rule>
+
+  <rule id="100123" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^user_profile$</field>
+    <description>auditd: shell profile changed (login time persistence)</description>
+  </rule>
+
+  <rule id="100124" level="12">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^honeyfile$</field>
+    <description>auditd: honeyfile was read, someone opened a decoy credential file</description>
+  </rule>
+
+  <rule id="100125" level="10">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^etcpasswd$</field>
+    <description>auditd: user or group database changed</description>
+  </rule>
+
+  <rule id="100126" level="8">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">^tmp_write$</field>
+    <description>auditd: file written in /tmp (common drop location)</description>
+  </rule>
+
+</group>
+
+<!--
+  Optional, needs tuning before you trust it: a beacon looks like the same
+  destination repeating on a schedule. Uncomment, adjust the timeframe to
+  something shorter than the round, and test it against normal traffic first.
+
+<group name="final_custom,beacon,">
+  <rule id="100130" level="10" frequency="6" timeframe="180">
+    <if_matched_sid>60000</if_matched_sid>
+    <same_field>win.eventdata.destinationIp</same_field>
+    <description>Possible C2 beacon: repeated connections to the same destination</description>
+  </rule>
+</group>
+-->

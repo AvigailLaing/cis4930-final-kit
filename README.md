@@ -1,0 +1,74 @@
+# CIS4930 Final Practical — Adversary Emulation & Detection Kit
+
+Scripts and runbooks used during the CIS4930 (Cyber Adversarial Tradecraft) final practical.
+Everything here runs **only** against machines inside our own NDG pod. Nothing targets a host
+outside the reservation, and nothing destroys data.
+
+Authors: Avigail Laing, Christian Taylor
+
+## What is in here
+
+```
+red.sh                      one entry point for the offensive kit
+blue.sh                     one entry point for the defensive kit
+red/
+  plant_linux.sh            five persistence mechanisms on Linux
+  plant_windows.ps1         four persistence mechanisms on Windows
+  loot_ad.sh                AD enumeration, writes ./loot/
+  ad_chain.sh               password reset -> WriteDacl -> DCSync -> pass-the-hash
+blue/
+  baseline.sh               capture Linux state before the round
+  baseline.ps1              capture Windows state before the round
+  triage_linux.sh           diff live state against the baseline, flag the oddity
+  sweep_linux.sh            find and remove common persistence (dry run by default)
+  patch_linux.sh            apply the fixes: auditd, sshd, SUID find, empty passwords
+  patch_windows.ps1         enable the audit policy that was missing, SMB signing, Sysmon
+  lockdown.ps1              endgame: password change, rogue admins, rogue tasks, WMI
+  wazuh_local_rules.xml     17 custom detection rules
+docs/                       runbooks, live cards, cheat sheet (PDF)
+```
+
+## Quick start
+
+On the Kali pod machine:
+
+```bash
+git clone <this-repo-url> final-kit
+cd final-kit
+
+bash red.sh help        # offensive usage
+bash blue.sh help       # defensive usage
+```
+
+The two dispatchers find their own directories, so they work from anywhere.
+
+## Requirements mapping
+
+| Assignment requirement | Fulfilled by |
+|---|---|
+| Red: 5+ separate techniques | `red/plant_linux.sh` (crontab, systemd user timer, .bashrc, authorized_keys, sudo user) and `red/plant_windows.ps1` (scheduled task, Run key, local admin, WMI subscription) |
+| Red: 2+ attempts to take down a service | documented in `docs/RED_LIVE_CARD.pdf`, endgame section, with the four screenshots per attempt |
+| Red: what we did to wipe a machine | documented in `docs/RED_LIVE_CARD.pdf`, wipe statement section |
+| Blue: 5+ incidents | `blue/triage_linux.sh` findings, Autoruns, and Wazuh, logged in the four-field evidence format |
+| Blue: how we dealt with password changes | `docs/BLUE_LIVE_CARD.pdf`, password rotation section, including what survived the rotation |
+| Blue: custom scripts to defend / automate patching | `blue/baseline*.{sh,ps1}`, `blue/triage_linux.sh`, `blue/sweep_linux.sh`, `blue/patch_linux.sh`, `blue/patch_windows.ps1`, `blue/wazuh_local_rules.xml` |
+
+## Technique to detection map
+
+See [TECHNIQUES.md](TECHNIQUES.md). Every offensive mechanism here is paired with the artefact a
+defender would look for, because that pairing is what the reports are graded on.
+
+## Safety notes
+
+- `sweep_linux.sh` is a dry run unless you pass `--remove`. Evidence first, deletion second.
+- `patch_linux.sh` validates the sshd config with `sshd -t` before reloading, so a bad edit cannot
+  lock out the team that is supposed to be defending the box.
+- Nothing in this repo reboots, wipes, or shuts down a machine. No service that is being scored is
+  stopped by any of the blue scripts.
+- No credentials, keys, or passwords are committed here.
+
+## Known environment assumptions
+
+The scripts assume Debian/Ubuntu with systemd on the Linux side and Windows Server on the other.
+`docs/PLAYBOOK.pdf` has a "reality check" page explaining how to confirm that and what to do when it
+is not true (container without systemd, no auditd, no WinRM).

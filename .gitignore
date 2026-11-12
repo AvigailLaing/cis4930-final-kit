@@ -1,0 +1,5 @@
+.DS_Store
+*.log
+loot/
+blue_baseline/
+*.tar.gz
