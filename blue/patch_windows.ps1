@@ -85,7 +85,37 @@ Step "5. Sysmon service"
 $sys = Get-Service -Name Sysmon64 -ErrorAction SilentlyContinue
 if ($null -eq $sys) { $sys = Get-Service -Name Sysmon -ErrorAction SilentlyContinue }
 if ($null -eq $sys) {
-  Say "  [!] Sysmon not installed on this host. Install it before the round if you can."
+  Say "  [!] Sysmon is NOT installed. The packet says it will not be, so install it now."
+  $exe = $null
+  foreach ($p in @("C:\Tools\Sysinternals Suite\Sysmon64.exe", "C:\Tools\Sysmon\Sysmon64.exe", "C:\ProgramData\Sysmon64.exe")) {
+    if (Test-Path $p) { $exe = $p; break }
+  }
+  if (-not $exe) {
+    Act "download Sysmon from Sysinternals" {
+      $zip = "$env:TEMP\Sysmon.zip"
+      Invoke-WebRequest -Uri "https://download.sysinternals.com/files/Sysmon.zip" -OutFile $zip -UseBasicParsing
+      Expand-Archive -Path $zip -DestinationPath "C:\Tools\Sysmon" -Force
+    }
+    if (Test-Path "C:\Tools\Sysmon\Sysmon64.exe") { $exe = "C:\Tools\Sysmon\Sysmon64.exe" }
+  }
+  if ($exe) {
+    $cfg = "C:\Tools\Sysmon\sysmonconfig.xml"
+    if (-not (Test-Path $cfg)) {
+      Act "download the SwiftOnSecurity config" {
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml" -OutFile $cfg -UseBasicParsing
+      }
+    }
+    if (Test-Path $cfg) {
+      Act "install Sysmon with the SwiftOnSecurity config" { & $exe -accepteula -i $cfg | Out-Null }
+    } else {
+      Act "install Sysmon with default config (no config file available)" { & $exe -accepteula -i | Out-Null }
+    }
+    Say "  -> Sysmon event ids that matter: 1 process, 3 network, 11 file, 13 registry, 19-21 WMI"
+  } else {
+    Say "  [!!] could not find or download Sysmon. No internet? Upload Sysmon64.exe from Kali with evil-winrm:"
+    Say "       upload /home/agentcooper/blue/Sysmon64.exe C:\ProgramData\Sysmon64.exe"
+    Say "       then: C:\ProgramData\Sysmon64.exe -accepteula -i"
+  }
 } else {
   Say "  BEFORE: $($sys.Name) = $($sys.Status)"
   Act "start $($sys.Name) and set it to automatic" {

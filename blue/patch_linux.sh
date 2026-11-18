@@ -39,11 +39,15 @@ fi
 doit "sudo systemctl enable --now auditd"
 BEFORE_RULES="$(sudo auditctl -l 2>/dev/null | wc -l)"
 say "  rules loaded before: $BEFORE_RULES"
-if [ -f /opt/florian-roth-auditd.rules ]; then
+if [ ! -f /opt/florian-roth-auditd.rules ]; then
+  say "  [i] ruleset missing, downloading it now"
+  doit "sudo curl -fsSL -o /opt/florian-roth-auditd.rules https://raw.githubusercontent.com/Neo23x0/auditd/master/audit.rules"
+fi
+if [ -s /opt/florian-roth-auditd.rules ]; then
   doit "sudo auditctl -R /opt/florian-roth-auditd.rules"
+  say "  [OK] ruleset loaded (it starts with -D, so anything loaded before this was wiped)"
 else
-  say "  [!] /opt/florian-roth-auditd.rules missing. Download it from github.com/Neo23x0/auditd"
-  say "      and re-run. The ruleset starts with -D, so it wipes anything loaded before it."
+  say "  [!] could not download the ruleset. No internet? Load only the custom watches below."
 fi
 doit "sudo auditctl -w /etc/crontab -p wa -k cron"
 doit "sudo auditctl -w /etc/cron.d -p wa -k cron"
@@ -122,6 +126,15 @@ for d in /var/www /srv/http; do
   [ -d "$d" ] && { say "  == $d"; sudo find "$d" -type f -perm -o+w 2>/dev/null | head -20 | sed 's/^/    /' | tee -a "$REPORT"; }
 done
 say "  (a world-writable file in a web root is how phase 3's web shell got planted)"
+
+# ------------------------------------------------------- 7. evidence tool
+head2 "7. sysdig, for clean live-command evidence"
+if command -v sysdig >/dev/null 2>&1; then
+  status "sysdig present"
+else
+  doit "sudo apt-get install -y sysdig"
+fi
+say "  use it live:   sudo sysdig -c spy_users"
 
 # --------------------------------------------------------------------- done
 head2 "done"

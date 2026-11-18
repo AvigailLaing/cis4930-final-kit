@@ -225,6 +225,16 @@ if ($Apply) {
 }
 
 Say ""
+Say "============ SCOREBOARD, DO THIS OR YOU LOSE POINTS ============"
+Say "  The scoring engine logs in with a real account for some checks (SSH on the PD, LDAP on DC)."
+Say "  If you rotate that account and do not tell the scoreboard, the check goes red and you lose points"
+Say "  for the rest of the round. The sequence is always:"
+Say "    1. rotate the account (this script)"
+Say "    2. open https://<scoring-host>:8443 -> Settings -> find that check"
+Say "    3. paste the new password, save"
+Say "    4. confirm the service is green again, screenshot both states"
+Say "  That before/after screenshot is also your best evidence for the report's password section."
+Say ""
 Say "============ REMINDERS ============"
 Say "  rotating a password does NOT remove persistence: scheduled tasks, Run keys, WMI"
 Say "  subscriptions and local admins all survive it. Re-check them after this script."

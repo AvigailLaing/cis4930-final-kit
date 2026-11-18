@@ -136,6 +136,12 @@ if [ "$APPLY" -eq 1 ]; then
   echo "If you rotated a service account, the service is now broken until you update it:"
   echo "  systemctl edit <unit>    # or edit the unit file's User= and the app config"
   echo "  then restart the service and re-check the scored port with nmap"
+  echo
+  echo "SCOREBOARD: if the account you just rotated is the one the scoring engine logs in with"
+  echo "  (SSH on the PD), you MUST update the password on the scoreboard settings page now:"
+  echo "    1. rotate (done above)  2. https://<scoring>:8443 -> Settings -> that check"
+  echo "    3. paste the new password, save   4. confirm green, screenshot before and after"
+  echo "  Forgetting this step turns a good rotation into a red service check."
 else
   echo "Dry run. Nothing changed. Re-run with --apply (and --include-service if you want services rotated)."
 fi
