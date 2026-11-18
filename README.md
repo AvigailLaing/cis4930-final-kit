@@ -66,6 +66,16 @@ The two dispatchers find their own directories, so they work from anywhere.
 See [TECHNIQUES.md](TECHNIQUES.md). Every offensive mechanism here is paired with the artefact a
 defender would look for, because that pairing is what the reports are graded on.
 
+## Addresses for the final
+
+| Service | Address | Notes |
+|---|---|---|
+| Wazuh dashboard | https://172.16.10.254 | admin / Owls4TW*26. Agents connected, no Sysmon or auditd yet |
+| Scoring engine | https://172.16.10.250:8443 | blueteam / twinpeaks1blue. Settings page holds the password per check |
+| Both boxes | 172.16.10.0/24 | out of scope for red |
+
+Custom rules: docs/WAZUH_RULES_DEPLOY.md (GUI first, CLI only if SSH works).
+
 ## Safety notes
 
 - `sweep_linux.sh` is a dry run unless you pass `--remove`. Evidence first, deletion second.
