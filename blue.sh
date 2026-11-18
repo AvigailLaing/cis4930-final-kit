@@ -40,6 +40,9 @@ case "$cmd" in
   evict|kick)
     exec bash "$DIR/blue/evict.sh" "$@"
     ;;
+  discover|find)
+    exec bash "$DIR/discover.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows side runs on the DC, in an admin session:

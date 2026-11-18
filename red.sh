@@ -27,6 +27,9 @@ case "$cmd" in
   privesc|suid)
     exec bash "$DIR/red/linux_privesc.sh" "$@"
     ;;
+  discover|find)
+    exec bash "$DIR/discover.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows persistence runs inside your evil-winrm session, not on Kali:
