@@ -74,6 +74,8 @@ if command -v sudo >/dev/null 2>&1; then
     for f in /etc/sudoers.d/*; do
       [ -f "$f" ] || continue
       [ -r "$f" ] && continue
+      # README ships with the sudo package on every Debian box. It is not a finding.
+      [ "$(basename "$f")" = "README" ] && continue
       hit "unreadable sudo drop-in: $f ($(stat -c %s "$f" 2>/dev/null) bytes)"
       try "read it once you have root: cat $f    (tiny file = likely one NOPASSWD line)"
     done
