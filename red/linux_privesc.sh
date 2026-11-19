@@ -150,7 +150,9 @@ if [ "$MODE" = auto ]; then
       case "$verdict" in
         full)      echo "  [ROOT] $bin -> $out"; PROVEN=$((PROVEN+1)) ;;
         effective) echo "  [ROOT] $bin -> $out   (effective only, run the shell form for a real uid=0)"; PROVEN=$((PROVEN+1)) ;;
-        read)      echo "  [READ] $bin -> $out"; PROVEN=$((PROVEN+1)) ;;
+        read)      echo "  [READ] $bin -> $out"; PROVEN=$((PROVEN+1))
+                   echo "         same trick reads any root-only file: /etc/shadow, /etc/sudoers.d/*, a service config"
+                   echo "         e.g.  $bin /etc/sudoers.d/90-blacklodge | $bin -d" ;;
         *)         echo "  [ -- ] $bin -> $out" ;;
       esac
       PROOFS="$PROOFS$bin|$base|$verdict
