@@ -45,10 +45,16 @@ echo "=== uid line: $(id) ==="
 # --------------------------------------------------------------- 1. sudo
 hr "sudo rules"
 if command -v sudo >/dev/null 2>&1; then
-  # -n avoids an interactive password prompt; fall back to plain -l on systems
-  # where the user has cached credentials.
-  SUDO_OUT="$(sudo -n -l 2>/dev/null || sudo -l 2>/dev/null)"
-  echo "$SUDO_OUT" | sed 's/^/  /' | head -20
+  # Never prompt. A script that stops for a password mid-round is worse than one that
+  # reports nothing: -n means "do not ask", so this stays silent on a non-sudoer.
+  SUDO_OUT="$(sudo -n -l 2>/dev/null)"
+  if [ -z "$SUDO_OUT" ]; then
+    echo "  no passwordless sudo rule visible."
+    echo "  either this account has no sudo, or it wants a password. Not a dead end: the SUID"
+    echo "  and sudoers.d sections below are what matter on an unprivileged account."
+  else
+    echo "$SUDO_OUT" | sed 's/^/  /' | head -20
+  fi
   if echo "$SUDO_OUT" | grep -qE '\(ALL(:ALL)?\) (NOPASSWD: )?ALL'; then
     hit "sudo allows everything"
     try "sudo -i    then  id    (expect uid=0)"

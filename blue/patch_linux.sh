@@ -18,6 +18,13 @@
 set -u
 DRY=0
 [ "${1:-}" = "--dry-run" ] && DRY=1
+
+# Refuse to run without privilege rather than print a page of steps that did nothing.
+if [ "$(id -u)" -ne 0 ] && ! command sudo -n true 2>/dev/null; then
+  echo "[!] patch needs root or passwordless sudo on this account."
+  echo "    escalate first (walkthrough page 3), then: bash blue.sh patch"
+  exit 1
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 REPORT="${HOME}/patch_report_${STAMP}.txt"
 

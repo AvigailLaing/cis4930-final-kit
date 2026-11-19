@@ -13,6 +13,14 @@ REF=""
 hr() { echo; echo "---- $* ----"; }
 hit() { echo "  [!!] $*"; }
 
+# A script that stops to ask for a password mid-round is worse than one that reports
+# less. If sudo cannot run without a prompt, run every check unprivileged instead.
+if ! command sudo -n true 2>/dev/null; then
+  echo "  [i] sudo wants a password on this account: privileged reads skipped"
+  echo "      run as root or a sudoer for the full picture"
+  sudo() { "$@"; }
+fi
+
 hr "listeners and connections (with the PID that owns them)"
 sudo ss -tupn 2>/dev/null | head -30
 

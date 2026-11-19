@@ -19,6 +19,19 @@ FIX=0
 FOUND=0
 FIXED=0
 
+# Refuse to print [FIX] lines that did not happen. A fix run without privilege is the
+# worst outcome: it reads like success and changes nothing.
+if [ "$FIX" -eq 1 ] && [ "$(id -u)" -ne 0 ] && ! command sudo -n true 2>/dev/null; then
+  echo "[!] --fix needs root or passwordless sudo, and this account has neither."
+  echo "    Run it as root, or run without --fix for the read-only report."
+  exit 1
+fi
+
+# Read-only mode on an unprivileged account: drop the privilege rather than prompt.
+if ! command sudo -n true 2>/dev/null; then
+  sudo() { "$@"; }
+fi
+
 hr() { echo; echo "---- $* ----"; }
 bad() { echo "  [FINDING] $*"; FOUND=$((FOUND+1)); }
 good() { echo "  [ok] $*"; }
