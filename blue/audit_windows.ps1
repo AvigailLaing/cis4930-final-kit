@@ -88,7 +88,8 @@ try {
         foreach ($u in $asrep) { Note $u.SamAccountName }
     } else { Ok 'every account requires preauth' }
 
-    $shadow = @($users | Where-Object { $_.msDS-KeyCredentialLink })
+    # A hyphenated attribute name has to be quoted or PowerShell parses it as subtraction.
+    $shadow = @($users | Where-Object { $_.'msDS-KeyCredentialLink' })
     if ($shadow.Count -gt 0) {
         Bad ('shadow credentials on ' + [string]$shadow.Count + ' account(s): red may already hold a key')
         foreach ($u in $shadow) { Note $u.SamAccountName }
