@@ -24,6 +24,7 @@ systemctl --user list-timers --all 2>/dev/null    >  "$D/units_user.txt" 2>/dev/
   sudo find /home /root -name authorized_keys -exec cat {} + 2>/dev/null; } > "$D/keys.txt" 2>/dev/null
 ps auxf                                           > "$D/procs.txt"     2>/dev/null
 sudo ss -tulpn                                    > "$D/listeners.txt" 2>/dev/null
+lsmod | awk '{print $1}' | sort                   > "$D/modules.txt"   2>/dev/null
 ls -la /tmp /var/tmp                              > "$D/tmp.txt"       2>/dev/null
 sudo getent shadow -s 2>/dev/null | cut -d: -f1,2 > "$D/shadow_hashes.txt" 2>/dev/null
 { sudo grep -vE '^#|^$' /etc/sudoers 2>/dev/null; ls /etc/sudoers.d 2>/dev/null; } > "$D/sudoers.txt" 2>/dev/null
