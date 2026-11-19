@@ -23,7 +23,12 @@ case "$cmd" in
     exec bash "$DIR/blue/baseline.sh" "$@"
     ;;
   triage|check)
-    exec bash "$DIR/blue/triage_linux.sh" "$@"
+    if [ "${1:-}" = "brief" ]; then
+      shift
+      bash "$DIR/blue/triage_linux.sh" "$@" | grep -E '^----|\[!!\]|no change|no baseline'
+    else
+      exec bash "$DIR/blue/triage_linux.sh" "$@"
+    fi
     ;;
   sweep|clean)
     exec bash "$DIR/blue/sweep_linux.sh" "$@"
