@@ -30,6 +30,12 @@ case "$cmd" in
   discover|find)
     exec bash "$DIR/discover.sh" "$@"
     ;;
+  spray)
+    exec bash "$DIR/spray.sh" "$@"
+    ;;
+  evidence|shot)
+    exec bash "$DIR/evidence.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows persistence runs inside your evil-winrm session, not on Kali:

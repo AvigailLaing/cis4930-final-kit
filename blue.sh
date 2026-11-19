@@ -48,6 +48,9 @@ case "$cmd" in
   discover|find)
     exec bash "$DIR/discover.sh" "$@"
     ;;
+  evidence|shot)
+    exec bash "$DIR/evidence.sh" "$@"
+    ;;
   win|windows)
     cat <<'EOF'
 Windows side runs on the DC, in an admin session:
