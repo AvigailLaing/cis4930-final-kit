@@ -79,8 +79,10 @@ for h in $(echo "$ALLHOSTS" | tr ' ' '\n' | sort -u); do
   OPEN="$(echo "$OUT" | awk '/open/ {print $1}' | cut -d/ -f1 | tr '\n' ',' | sed 's/,$//')"
   [ -z "$OPEN" ] && continue
 
-  if echo "$OPEN" | grep -qE '(^|,)(53|389|445|3389|5985)(,|$)'; then
+  if echo "$OPEN" | grep -qE '(^|,)(389|445|3389|5985)(,|$)'; then
     KIND="WINDOWS / DC"; [ -z "$DC" ] && DC="$h"
+  elif echo "$OPEN" | grep -qE '(^|,)53(,|$)'; then
+    KIND="DNS only (router or gateway, not the DC)"
   elif echo "$OPEN" | grep -qE '(^|,)(22|21)(,|$)'; then
     KIND="LINUX"; [ -z "$PD" ] && PD="$h"
   else
