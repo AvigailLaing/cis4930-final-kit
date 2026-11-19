@@ -11,7 +11,13 @@ REF=""
 [ -f "$D/stamp.txt" ] && REF="$D/stamp.txt"
 
 hr() { echo; echo "---- $* ----"; }
-hit() { echo "  [!!] $*"; }
+# Every hit is also written to a temp file, so the summary at the end is complete even
+# for the checks that run inside a subshell. Reading 400 lines of output mid-round is not
+# realistic: read the HITS block at the bottom, then scroll up if you need the detail.
+HITFILE="$(mktemp 2>/dev/null || echo /tmp/.triage_hits.$$)"
+: > "$HITFILE"
+trap 'rm -f "$HITFILE"' EXIT
+hit() { echo "  [!!] $*"; echo "$*" >> "$HITFILE"; }
 
 # A script that stops to ask for a password mid-round is worse than one that reports
 # less. If sudo cannot run without a prompt, run every check unprivileged instead.
@@ -142,9 +148,21 @@ else
   echo "  no cron entry points at a hidden path"
 fi
 
-hr "shell profiles changed"
-[ -n "$REF" ] && sudo find /home /root -maxdepth 2 -name '.bashrc' -o -maxdepth 2 -name '.profile' 2>/dev/null \
-  | xargs -r ls -l 2>/dev/null | head
+hr "shell profiles changed (only ones touched since baseline)"
+# This used to print every profile on the box, which buried the one line that mattered.
+# -newer needs the -o grouped in parentheses, and the callback line is what you read.
+if [ -n "$REF" ]; then
+  CHANGED="$(sudo find /home /root -maxdepth 2 -type f \( -name '.bashrc' -o -name '.profile' -o -name '.bash_profile' \) -newer "$REF" 2>/dev/null)"
+  if [ -n "$CHANGED" ]; then
+    echo "$CHANGED" | sed 's/^/  /'
+    hit "profile modified since baseline (above)"
+  else
+    echo "  no change"
+  fi
+  sudo grep -nE 'dev/tcp|nc -e|bash -i|socat|/opt/\.' /root/.bashrc /home/*/.bashrc 2>/dev/null | head -10
+else
+  echo "  no baseline, cannot diff"
+fi
 
 hr "auditd, if it is loaded"
 if command -v aureport >/dev/null 2>&1; then
@@ -161,4 +179,14 @@ hr "installed files that were modified (slow, worth one run)"
 echo "  run: sudo dpkg -V | head -20"
 
 echo
-echo "If you found something: screenshot it, then run sweep_linux.sh"
+echo "================= HITS ================="
+if [ -s "$HITFILE" ]; then
+  NL=0
+  while IFS= read -r h; do NL=$((NL+1)); printf '  [!!] %s\n' "$h"; done < "$HITFILE"
+  echo "  ---- $NL hit(s). Anything here is a report item. ----"
+else
+  echo "  nothing flagged"
+fi
+echo
+echo "If you found something: screenshot the HITS block and the section above it,"
+echo "then run: bash blue.sh sweep"

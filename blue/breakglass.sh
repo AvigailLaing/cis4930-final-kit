@@ -18,6 +18,9 @@
 
 set -u
 ACTION="${1:---create}"
+# Accept both "create" and "--create", so the dispatcher form works:
+#   bash blue.sh breakglass create
+case "$ACTION" in create|verify|remove) ACTION="--$ACTION" ;; esac
 USER_NAME="svc_brkglass"
 KEY="/root/.ssh/brkglass_ed25519"
 SECRETS="/root/.brkglass-credentials.txt"
