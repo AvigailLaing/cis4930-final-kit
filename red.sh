@@ -27,6 +27,9 @@ case "$cmd" in
   privesc|suid|survey)
     exec bash "$DIR/red/linux_privesc.sh" "$@"
     ;;
+  backdoor|decoys|plant-suid)
+    exec bash "$DIR/red/backdoor_suid.sh" "$@"
+    ;;
   discover|find)
     exec bash "$DIR/discover.sh" "$@"
     ;;
@@ -74,6 +77,12 @@ red.sh — red kit entry point
         Tomorrow's order: run --auto first to learn which vector is live on a box
         you have never seen, then hand-run two of the winners for the screenshot.
         The report needs your narration of what the output meant.
+
+  bash red.sh backdoor         plant YOUR OWN SUID vector plus four decoys
+  bash red.sh backdoor --remove   take it all back out, via a manifest
+        the red packet asks for both: "configure privilege escalation vectors"
+        and "wasting blue's time counts if you explain it". Blue patches the
+        shipped SUID binaries, so yours has to be the one they miss.
 
   bash red.sh win
         the reminder for the Windows script (runs inside evil-winrm)

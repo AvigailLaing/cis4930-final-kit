@@ -58,9 +58,15 @@ case "$cmd" in
     cat <<'EOF'
 Windows side runs on the DC, in an admin session:
 
+  .\blue\audit_windows.ps1                    # read only: DA members, roastable
+                                              # accounts, cert templates, autoruns,
+                                              # 4720/4728/4662/4624 events
   .\blue\baseline.ps1                         # prep, first thing
   .\blue\patch_windows.ps1                    # prep, then never again
   .\blue\lockdown.ps1 -NewAdminPass '...'     # endgame only
+
+Run audit_windows.ps1 twice: once when you get in, once after you patch, and
+screenshot both. That pair is your Windows hardening evidence.
 
 Deploy the detection rules once, during prep:
   sudo cp blue/wazuh_local_rules.xml /var/ossec/etc/rules/final_custom_rules.xml
