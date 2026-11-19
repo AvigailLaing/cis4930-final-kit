@@ -42,7 +42,22 @@ if sudo -n -l 2>/dev/null | grep -qE '\(ALL(:ALL)?\) (NOPASSWD: )?ALL'; then
 fi
 for f in /etc/sudoers.d/*; do
   [ -f "$f" ] || continue
-  grep -qE 'ALL' "$f" 2>/dev/null && { bad "sudo drop-in grants ALL: $f"; }
+  [ "$(basename "$f")" = "README" ] && continue
+  # Blanket rights and a passwordless single binary are different findings, and the
+  # second one is the trap: on the practice pod bbriggs had NOPASSWD on /usr/bin/awk.
+  if grep -qE '\(ALL(:ALL)?\)[[:space:]]*NOPASSWD:[[:space:]]*ALL' "$f" 2>/dev/null; then
+    bad "sudo drop-in grants blanket passwordless root: $f"
+    echo "     $(sudo cat "$f" 2>/dev/null)"
+  elif grep -qE 'NOPASSWD' "$f" 2>/dev/null; then
+    bad "sudo drop-in grants passwordless sudo on one command: $f"
+    echo "     $(sudo cat "$f" 2>/dev/null)"
+    echo "     if that binary has a GTFOBins escape (awk, find, less, python, tar, vi, man) it is root"
+    echo "     fix by hand, not by script: sudo visudo -f $f   (drop NOPASSWD, or delete the drop-in)"
+    echo "     do not automate this one: editing sudoers mid-round can break a scored check"
+  elif grep -qE 'ALL' "$f" 2>/dev/null; then
+    bad "sudo drop-in references ALL: $f"
+    echo "     $(sudo cat "$f" 2>/dev/null)"
+  fi
 done
 
 # 2. SUID binaries -----------------------------------------------------------
@@ -79,6 +94,19 @@ else
 fi
 EXTRA_ROOT="$(awk -F: '$3==0 && $1!="root" {print $1}' /etc/passwd)"
 [ -n "$EXTRA_ROOT" ] && { for u in $EXTRA_ROOT; do bad "UID 0 account that is not root: $u"; done; } || good "only root has UID 0"
+# A system account (uid under 1000) with a real shell can log in. Stock Debian gives
+# those /usr/sbin/nologin. On the practice pod, exim was uid 997 with /bin/bash and
+# nothing on the box needed it: no port 25 was listening.
+SYSTEM_SHELL="$(awk -F: '$3<1000 && $3>0 && $7 ~ /(bash|sh|zsh|dash|ksh)$/ {print $1}' /etc/passwd)"
+if [ -n "$SYSTEM_SHELL" ]; then
+  for u in $SYSTEM_SHELL; do
+    bad "system account with a login shell: $u ($(getent passwd "$u" | cut -d: -f3,7))"
+    echo "     a system account that can log in is how a hidden account is left behind"
+    fixit "sudo usermod -s /usr/sbin/nologin $u"
+  done
+else
+  good "no non-root system account has a login shell"
+fi
 
 # 4. sshd --------------------------------------------------------------------
 hr "sshd configuration"
