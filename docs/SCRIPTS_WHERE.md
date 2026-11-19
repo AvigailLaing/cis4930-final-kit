@@ -10,9 +10,11 @@ This is the mistake that wastes the most time: half the kit runs on **Kali**, ha
 | `red.sh chain` | Kali | reset a password, grant replication, dump a hash |
 | `red.sh plant` | **the PD** (ssh in first) | five persistence mechanisms on Linux |
 | `plant_windows.ps1` | **the DC** (evil-winrm upload) | four persistence mechanisms on Windows |
-| `red.sh privesc` | **the PD** | local escalation paths |
+| `red.sh privesc` | **the PD** | local escalation paths (read only) |
+| `red.sh privesc --auto` | **the PD** | same, and it *proves* each candidate without opening a shell: prints `[ROOT]` for the ones that really return root |
 | `blue.sh baseline` | **the PD** | state snapshot |
-| `blue.sh patch` | **the PD** | auditd, sshd, SUID find, sysdig |
+| `blue.sh audit --fix` | **the PD** | findings list before and after, closes the safe ones |
+| `blue.sh patch` | **the PD** | auditd, sshd, **every non-stock SUID bit** (not just find), sysdig |
 | `blue.sh triage` | **the PD** | what changed since baseline |
 | `blue.sh sweep` | **the PD** | find and remove persistence |
 | `blue.sh evict` | **the PD** | kill sessions from an IP, remove persistence, verify |

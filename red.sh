@@ -24,7 +24,7 @@ case "$cmd" in
   chain|ad)
     exec bash "$DIR/red/ad_chain.sh" "$@"
     ;;
-  privesc|suid)
+  privesc|suid|survey)
     exec bash "$DIR/red/linux_privesc.sh" "$@"
     ;;
   discover|find)
@@ -63,9 +63,17 @@ red.sh — red kit entry point
         reset a password, grant replication rights, dump the Administrator
         hash, then prints the pass-the-hash command
 
-  bash red.sh privesc
-        rank local Linux escalation paths: sudo, SUID, capabilities, cron,
-        writable units, docker group, kernel CVE range
+  bash red.sh privesc            rank local Linux escalation paths (read only)
+  bash red.sh privesc --auto     rank them AND prove each one, no shells opened,
+                                 nothing written. Prints [ROOT] for every vector
+                                 that actually returns root.
+        checks: sudo and sudo drop-ins, SUID versus the stock Debian set,
+        capabilities, cron, writable units, PATH, docker/lxd, world-writable
+        dirs, FTP upload dir, kernel CVE range
+
+        Tomorrow's order: run --auto first to learn which vector is live on a box
+        you have never seen, then hand-run two of the winners for the screenshot.
+        The report needs your narration of what the output meant.
 
   bash red.sh win
         the reminder for the Windows script (runs inside evil-winrm)

@@ -46,15 +46,26 @@ for f in /etc/sudoers.d/*; do
 done
 
 # 2. SUID binaries -----------------------------------------------------------
-hr "SUID binaries that the labs used for escalation"
-for b in /usr/bin/find /usr/bin/nmap /usr/bin/vim /usr/bin/vim.basic /usr/bin/awk /usr/bin/python3 /usr/bin/less /usr/bin/man; do
-  [ -u "$b" ] || continue
-  bad "SUID on $b"
-  case "$b" in
-    /usr/bin/find) fixit "sudo chmod u-s $b" ;;
-    *) echo "     review by hand before removing: dpkg -S $b" ;;
-  esac
-done
+hr "SUID set on binaries that are not SUID by default"
+# The old hardcoded list missed python3.13 and base64, which is exactly what the
+# practice pod had. Compare against the stock Debian set instead, and strip the
+# version suffix so python3.13 and python3 both resolve.
+STOCK_SUID="dbus-daemon-launch-helper Xorg.wrap ssh-keysign polkit-agent-helper-1 pppd chfn chsh sudo passwd su newgrp gpasswd fusermount fusermount3 pkexec mount umount ntfs-3g unix_chkpwd chage expire sg snap-confine chrome-sandbox nvidia-modprobe"
+BAD_SUID=0
+while IFS= read -r b; do
+  [ -n "$b" ] || continue
+  base="$(basename "$b")"
+  stem="$(echo "$base" | sed -E 's/(python|perl|ruby|php)[0-9.]+$/\1/')"
+  case " $STOCK_SUID " in *" $base "*) continue ;; esac
+  case " $STOCK_SUID " in *" $stem "*) continue ;; esac
+  BAD_SUID=$((BAD_SUID+1))
+  bad "SUID on $b (not SUID by default)"
+  echo "     package owner: $(dpkg -S "$b" 2>/dev/null | head -1 | cut -d: -f1 || echo 'no dpkg owner')"
+  fixit "sudo chmod u-s $b"
+done <<EOF
+$(find / -perm -4000 -type f 2>/dev/null)
+EOF
+[ "$BAD_SUID" -eq 0 ] && good "no unexpected SUID binaries"
 COUNT_SUID="$(find / -perm -4000 -type f 2>/dev/null | wc -l)"
 echo "  total SUID binaries: $COUNT_SUID (a normal Debian box has 10 to 15)"
 

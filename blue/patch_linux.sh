@@ -90,16 +90,28 @@ else
   say "  sshd_config.d not present, skipping (older sshd layout)"
 fi
 
-# --------------------------------------------------------------- 3. suid find
-head2 "3. SUID bit on find (phase 3 escalation path)"
-if [ -u /usr/bin/find ]; then
-  say "  BEFORE: $(ls -l /usr/bin/find)"
-  doit "sudo chmod u-s /usr/bin/find"
-  say "  AFTER:  $(ls -l /usr/bin/find)"
-  status "SUID removed from find"
-else
-  status "/usr/bin/find is not SUID, already clean"
-fi
+# --------------------------------------------------- 3. unexpected SUID bits
+# The labs only ever used SUID find, but the practice pod shipped three: find,
+# python3.13 and base64. Patch what is actually there, not what you expect.
+head2 "3. SUID bits that should not be set (escalation path)"
+STOCK_SUID="dbus-daemon-launch-helper Xorg.wrap ssh-keysign polkit-agent-helper-1 pppd chfn chsh sudo passwd su newgrp gpasswd fusermount fusermount3 pkexec mount umount ntfs-3g unix_chkpwd chage expire sg snap-confine chrome-sandbox nvidia-modprobe"
+SUID_FIXED=0
+while IFS= read -r b; do
+  [ -n "$b" ] || continue
+  base="$(basename "$b")"
+  stem="$(echo "$base" | sed -E 's/(python|perl|ruby|php)[0-9.]+$/\1/')"
+  case " $STOCK_SUID " in *" $base "*) continue ;; esac
+  case " $STOCK_SUID " in *" $stem "*) continue ;; esac
+  say "  BEFORE: $(ls -l "$b")"
+  doit "sudo chmod u-s $b"
+  say "  AFTER:  $(ls -l "$b")"
+  SUID_FIXED=$((SUID_FIXED+1))
+  status "SUID removed from $b"
+done <<EOF
+$(find / -perm -4000 -type f 2>/dev/null)
+EOF
+[ "$SUID_FIXED" -eq 0 ] && status "no unexpected SUID binaries, already clean"
+say "  total SUID binaries now: $(find / -perm -4000 -type f 2>/dev/null | wc -l) (stock Debian is 10 to 15)"
 
 # --------------------------------------------------------- 4. empty passwords
 head2 "4. accounts with an empty password hash"
