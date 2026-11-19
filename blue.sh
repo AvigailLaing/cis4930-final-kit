@@ -36,6 +36,9 @@ case "$cmd" in
   patch|harden)
     exec bash "$DIR/blue/patch_linux.sh" "$@"
     ;;
+  audit|scan)
+    exec bash "$DIR/blue/audit_linux.sh" "$@"
+    ;;
   rotate|passwords)
     exec bash "$DIR/blue/rotate_linux.sh" "$@"
     ;;
