@@ -126,6 +126,22 @@ hr "recently written files in the usual drop spots"
 [ -n "$REF" ] && sudo find /etc /home /root /usr/local /tmp /var/tmp -newer "$REF" -type f 2>/dev/null \
   | grep -vE '\.log$|blue_baseline|/proc/' | head -30
 
+hr "hidden files and directories red leaves behind"
+# Dot-named files in /opt and /usr/local are almost never legitimate. The practice pod
+# shipped a cron line writing to /opt/.blacklodge/beacon.log: harmless looking, and it
+# matched none of the callback patterns above. Find the directory, then read the cron.
+for d in /opt /usr/local /usr/local/bin /usr/local/sbin; do
+  [ -d "$d" ] || continue
+  sudo find "$d" -maxdepth 2 -name '.*' -printf '  %TY-%Tm-%Td %TH:%TM  %m %u  %p\n' 2>/dev/null | head -12
+done
+HIDDEN_CRON="$(sudo grep -rnE '/opt/\.[a-z]|/usr/local/(s?bin)/\.[a-z]' /etc/crontab /etc/cron.d /var/spool/cron/crontabs 2>/dev/null | head -10)"
+if [ -n "$HIDDEN_CRON" ]; then
+  echo "$HIDDEN_CRON" | sed 's/^/  /'
+  hit "a cron entry writes into a hidden path (above): that is persistence, not housekeeping"
+else
+  echo "  no cron entry points at a hidden path"
+fi
+
 hr "shell profiles changed"
 [ -n "$REF" ] && sudo find /home /root -maxdepth 2 -name '.bashrc' -o -maxdepth 2 -name '.profile' 2>/dev/null \
   | xargs -r ls -l 2>/dev/null | head

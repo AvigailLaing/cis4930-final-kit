@@ -15,7 +15,10 @@ REMOVE=0
 [ "${1:-}" = "--remove" ] && REMOVE=1
 U="${2:-$(id -un)}"
 HOMEDIR="$(getent passwd "$U" | cut -d: -f6)"
-PAT='dev/tcp|bash -i|nc -e|ncat|socat|base64 -d|curl -s.*sh|wget.*-O-'
+# The last two alternatives catch quiet persistence: a cron line that writes into a
+# hidden directory under /opt or /usr/local. The practice pod shipped one of those
+# (@reboot echo owls >> /opt/.blacklodge/beacon.log) and it matched nothing above.
+PAT='dev/tcp|bash -i|nc -e|ncat|socat|base64 -d|curl -s.*sh|wget.*-O-|/opt/\.[a-z]|/usr/local/(s?bin)/\.[a-z]'
 FOUND=0
 
 note() { echo "  [FOUND] $*"; FOUND=$((FOUND+1)); }
@@ -39,9 +42,26 @@ fi
 
 echo
 echo "---- system crontabs ----"
-sudo grep -rnE "$PAT" /etc/cron* /etc/crontab /var/spool/cron 2>/dev/null | while read -r line; do
-  echo "  [FOUND] $line"
+# Detect AND remove here. An earlier version printed these matches and left them in
+# place, so a system-wide cron line survived the sweep and kept firing.
+SYS_CRON_HIT=0
+for f in /etc/crontab /etc/cron.d/*; do
+  [ -f "$f" ] || continue
+  sudo grep -qE "$PAT" "$f" 2>/dev/null || continue
+  SYS_CRON_HIT=1
+  note "system cron entry in $f"
+  sudo grep -nE "$PAT" "$f" 2>/dev/null | sed 's/^/      /'
+  act "delete those lines from $f, keeping a backup"
+  if [ "$REMOVE" -eq 1 ]; then
+    sudo mkdir -p /root/sweep-backup
+    sudo cp "$f" "/root/sweep-backup/$(basename "$f").$(date +%H%M%S).bak"
+    sudo grep -vE "$PAT" "$f" > "/tmp/.sweep.$$" 2>/dev/null
+    sudo cat "/tmp/.sweep.$$" > "$f"
+    rm -f "/tmp/.sweep.$$"
+    echo "      [OK] $f rewritten, backup in /root/sweep-backup"
+  fi
 done
+[ "$SYS_CRON_HIT" -eq 0 ] && echo "  no matching entries in /etc/crontab or /etc/cron.d"
 
 echo
 echo "---- systemd units matching the patterns ----"
